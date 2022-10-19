@@ -3,4 +3,4 @@
 /include
 /lib64
 /share
-/.pyvenv.cfg
+/pyvenv.cfg
