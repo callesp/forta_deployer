@@ -1,4 +1,5 @@
 # -*- encoding: utf-8 -*-
+from nis import match
 import os
 import sys
 import time
@@ -6,6 +7,8 @@ import csv
 import paramiko
 import traceback
 from threading import Thread
+
+output_dir = 'output'
 
 
 def async_func(f):
@@ -16,85 +19,69 @@ def async_func(f):
 
 
 @async_func
-def ssh(sys_ip, username, password, cmds):
+def ssh(ip, username, password):
 
     # 创建ssh客户端
     client = paramiko.SSHClient()
-    try:
-        # 第一次ssh远程时会提示输入yes或者no
-        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        # 密码方式远程连接
-        client.connect(sys_ip, 22, username=username,
-                       password=password, timeout=5)
-        # 互信方式远程连接
-        # key_file = paramiko.RSAKey.from_private_key_file("/root/.ssh/id_rsa")
-        # ssh.connect(sys_ip, 22, username=username, pkey=key_file, timeout=20)
-        # 执行命令
-        for cmd_name, cmd in cmds:
-            print('*'*10 + cmd_name + '*'*10)
-            stdin, stdout, stderr = client.exec_command(cmd)
-            # 获取命令执行结果,返回的数据是一个list
-            result = stdout.readlines()
 
-            if len(result) > 0:
-                print(f'{sys_ip}:{str(result[0])}')
-            else:
-                result = stderr.readlines()
-                print(f'{sys_ip}: {result}')
+    node_output_dir = f'{output_dir}/{ip}'
 
-    except Exception as e:
-        print(f'{sys_ip} error: {e}')
+    # Create node output directory.
+    if not os.path.exists(node_output_dir):
+        os.mkdir(node_output_dir)
 
-        traceback.print_exc()
+    with open(f'{node_output_dir}/output.log', 'w+') as log, open(f'{node_output_dir}/error.log', 'w+') as errlog:
+        try:
+            # 第一次ssh远程时会提示输入yes或者no
+            client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            # 密码方式远程连接
+            client.connect(ip, 22, username=username,
+                           password=password, timeout=5)
+            # 互信方式远程连接
+            # key_file = paramiko.RSAKey.from_private_key_file("/root/.ssh/id_rsa")
+            # ssh.connect(sys_ip, 22, username=username, pkey=key_file, timeout=20)
 
-    finally:
-        client.close()
+            # 上传脚本
+            sftp = client.open_sftp()
+            sftp.put('install.sh', '/root/install.sh')
 
+            # 修改权限
+            client.exec_command('chmod +x /root/install.sh')
 
-CMD_TIME_SYNC = 'systemctl enable systemd-timesyncd && systemctl start systemd-timesyncd && timedatectl status'
-CMD_UNINSTALL_DOCKER = 'yum remove docker \
-                  docker-client \
-                  docker-client-latest \
-                  docker-common \
-                  docker-latest \
-                  docker-latest-logrotate \
-                  docker-logrotate \
-                  docker-engine'
-CMD_INSTALL_DOCKER = 'yum install -y yum-utils \
-    && yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo \
-    && yum install docker-ce docker-ce-cli containerd.io docker-compose-plugin'
+            # 执行命令
+            stdin, stdout, stderr = client.exec_command(
+                f'sh /root/install.sh passwd owner_addres')
 
-CMD_CONFIG_DOCKER = '''echo "{
-   "default-address-pools": [
-        {
-            "base":"172.17.0.0/12",
-            "size":16
-        },
-        {
-            "base":"192.168.0.0/16",
-            "size":20
-        },
-        {
-            "base":"10.99.0.0/16",
-            "size":24
-        }
-    ]
-}" > /etc/docker/daemon.json'''
+            if stdout.readable:
+                output = str(stdout.read(), encoding='utf-8')
+                print(f'stdout: {output}')
+                log.write(output)
 
-CMD_START_DOCKER = 'systemctl start docker'
+            if stderr.readable:
+                output = str(stderr.read(), encoding='utf-8')
+                print(f'stderr: {output}')
+                errlog.write(output)
 
+        except Exception as e:
+            log.write(traceback.format_exc())
+            traceback.print_exc()
 
-FORTA_INSTALLATION = zip(['time sync', 'uninstall docker', 'install docker', 'config docker', 'start docker'], [CMD_TIME_SYNC, CMD_UNINSTALL_DOCKER,
-                                                                                                                CMD_INSTALL_DOCKER, CMD_CONFIG_DOCKER, CMD_START_DOCKER])
+        finally:
+            client.close()
 
 
 def main():
     # assets_path = sys.argv[1]
     assets_path = 'assets.csv'
 
+    # Make sure that we have assets.csv.
     if not os.path.exists(assets_path):
         print('Assets path does not exists.')
         return
+
+    # Create logs directory at current path.
+    if not os.path.exists(output_dir):
+        os.mkdir(output_dir)
 
     nodes_list = []
 
@@ -110,7 +97,7 @@ def main():
 
         for ip, user, passwd in node_part:
             # Do something here.
-            ssh(ip, user, passwd, FORTA_INSTALLATION)
+            ssh(ip, user, passwd)
 
         del nodes_list[0:5]
 
