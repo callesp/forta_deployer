@@ -1,4 +1,5 @@
 # -*- encoding: utf-8 -*-
+from base64 import encode
 from nis import match
 import os
 import sys
@@ -62,8 +63,22 @@ def ssh(ip, username, password):
                 print(f'stderr: {output}')
                 errlog.write(output)
 
+            # Get account address.
+            stdin, stdout, stderr = client.exec_command(
+                f'su - forta -c "forta account address" 2>&1')
+
+            if stdout.readable:
+                token = str(stdout.read(), encoding='utf-8')
+
+                if token:
+                    token_dir = f'{node_output_dir}/{token}'
+                    os.mkdir(f'{token_dir}')
+                    for sub_item in sftp.listdir('/home/forta/.forta/.keys'):
+                        sftp.get(
+                            f'/home/forta/.forta/.keys/{sub_item}', f'{token_dir}/{sub_item}')
+
         except Exception as e:
-            log.write(traceback.format_exc())
+            errlog.write(traceback.format_exc())
             traceback.print_exc()
 
         finally:
