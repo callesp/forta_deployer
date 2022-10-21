@@ -1,6 +1,4 @@
 # -*- encoding: utf-8 -*-
-from base64 import encode
-from nis import match
 import os
 import sys
 import time

@@ -108,6 +108,7 @@ function install_forta(){
 function create_user(){
     useradd -m forta
     usermod -aG docker $USER
+    chmod a+rw /var/run/docker.sock
 }
 
 
@@ -123,6 +124,8 @@ function config_forta(){
 }
 
 function start_forta(){
+    mkdir /etc/systemd/system/forta.service.d
+
     echo "[Service]
 Environment='FORTA_DIR=/home/$USER/.forta'
 Environment='FORTA_PASSPHRASE=$PASS_PHRASE'" > /etc/systemd/system/forta.service.d/env.conf
