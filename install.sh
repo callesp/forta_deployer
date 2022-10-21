@@ -146,3 +146,5 @@ create_user
 forta_init
 
 config_forta
+
+start_forta

@@ -20,7 +20,7 @@ def async_func(f):
 
 
 @async_func
-def ssh(ip, username, password):
+def ssh(ip, password, owner_address):
 
     # 创建ssh客户端
     client = paramiko.SSHClient()
@@ -36,7 +36,7 @@ def ssh(ip, username, password):
             # 第一次ssh远程时会提示输入yes或者no
             client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             # 密码方式远程连接
-            client.connect(ip, 22, username=username,
+            client.connect(ip, 22, username='root',
                            password=password, timeout=5)
             # 互信方式远程连接
             # key_file = paramiko.RSAKey.from_private_key_file("/root/.ssh/id_rsa")
@@ -51,7 +51,7 @@ def ssh(ip, username, password):
 
             # 执行命令
             stdin, stdout, stderr = client.exec_command(
-                f'sh /root/install.sh passwd owner_addres')
+                f'sh /root/install.sh {password} {owner_address}')
 
             if stdout.readable:
                 output = str(stdout.read(), encoding='utf-8')
@@ -110,9 +110,9 @@ def main():
     while len(nodes_list):
         node_part = nodes_list[0:5]
 
-        for ip, user, passwd in node_part:
+        for ip, passwd, address in node_part:
             # Do something here.
-            ssh(ip, user, passwd)
+            ssh(ip, passwd, address)
 
         del nodes_list[0:5]
 
