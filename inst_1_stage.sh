@@ -1,7 +1,6 @@
 #!/bin/sh
 
 PASS_PHRASE=$1
-OWNER_ADDRESS=$2
 USER=forta
 
 
@@ -123,23 +122,6 @@ function config_forta(){
     echo "$FORTA_CONFIG" > "/home/$USER/.forta/config.yml"
 }
 
-function start_forta(){
-    mkdir /etc/systemd/system/forta.service.d
-
-    echo "[Service]
-Environment='FORTA_DIR=/home/$USER/.forta'
-Environment='FORTA_PASSPHRASE=$PASS_PHRASE'" > /etc/systemd/system/forta.service.d/env.conf
-
-    systemctl daemon-reload
-    systemctl enable forta
-    systemctl start forta
-}
-
-
-function forta_register(){
-    su - $USER -c "forta register --owner-address=$OWNER_ADDRESS --passphrase=$PASS_PHRASE"
-}
-
 install_docker
 
 install_forta
@@ -149,5 +131,3 @@ create_user
 forta_init
 
 config_forta
-
-start_forta
