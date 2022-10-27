@@ -91,9 +91,9 @@ function install_docker(){
 
     yum install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 
-    util [ -e '/etc/docker' ]
+    until [ -e '/etc/docker' ]
     do
-        sleep 1
+        sleep 10
     done
 
     echo "$DAEMON_JSON" > /etc/docker/daemon.json
