@@ -22,7 +22,7 @@ def async_func(f):
 
 
 @async_func
-def ssh_stage1(ip, password, owner_address):
+def ssh_stage1(ip, password, wallet_passwd):
 
     # 创建ssh客户端
     client = paramiko.SSHClient()
@@ -53,7 +53,7 @@ def ssh_stage1(ip, password, owner_address):
 
             # 执行安装stage 1命令
             stdin, stdout, stderr = client.exec_command(
-                f'sh /root/inst_1_stage.sh {password}')
+                f'sh /root/inst_1_stage.sh {wallet_passwd}')
 
             if stdout.readable:
                 output = str(stdout.read(), encoding='utf-8')
@@ -87,7 +87,7 @@ def ssh_stage1(ip, password, owner_address):
             client.close()
 
 @async_func
-def ssh_stage2(ip, password, owner_address):
+def ssh_stage2(ip, password, owner_address, wallet_passwd):
     # 创建ssh客户端
     client = paramiko.SSHClient()
 
@@ -118,7 +118,7 @@ def ssh_stage2(ip, password, owner_address):
 
             # 执行安装stage 2命令
             stdin, stdout, stderr = client.exec_command(
-                f'sh /root/inst_2_stage.sh {password} {owner_address}')
+                f'sh /root/inst_2_stage.sh {wallet_passwd} {owner_address}')
 
             if stdout.readable:
                 output = str(stdout.read(), encoding='utf-8')
@@ -180,12 +180,12 @@ def main(stage):
     while len(nodes_list):
         node_part = nodes_list[0:5]
 
-        for ip, passwd, address in node_part:
+        for ip, passwd, address, wallet_passwd in node_part:
             # Do something here.
             if stage == Procedure.Stage1:
-                ssh_stage1(ip, passwd, address)
+                ssh_stage1(ip, passwd, wallet_passwd)
             elif stage == Procedure.Stage2:
-                ssh_stage2(ip, passwd, address)
+                ssh_stage2(ip, passwd, address, wallet_passwd)
             else:
                 pass
 
