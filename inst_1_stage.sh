@@ -11,7 +11,8 @@ chainId: 1
 # The scan settings are used to retrieve the transactions that are analyzed
 scan:
   jsonRpc:
-    url: https://rpc.ankr.com/eth
+    url: https://eth-mainnet.g.alchemy.com/v2/SbwYv1dbQ2on7DN8nSAfOQXEBKw3-S2k
+    #free url: https://rpc.ankr.com/eth
 
 # The trace endpoint must support trace_block (such as alchemy)
 trace:
@@ -89,6 +90,11 @@ function install_docker(){
     https://download.docker.com/linux/centos/docker-ce.repo
 
     yum install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+
+    util [ -e '/etc/docker' ]
+    do
+        sleep 1
+    done
 
     echo "$DAEMON_JSON" > /etc/docker/daemon.json
 
