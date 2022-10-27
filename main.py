@@ -46,14 +46,14 @@ def ssh_stage1(ip, password, wallet_passwd):
 
             # 上传脚本
             sftp = client.open_sftp()
-            sftp.put('inst_1_stage.sh', '/root/inst_1_stage.sh')
+            sftp.put('inst_stage1.sh', '/root/inst_stage1.sh')
 
             # 修改权限
-            client.exec_command('chmod +x /root/inst_1_stage.sh')
+            client.exec_command('chmod +x /root/inst_stage1.sh')
 
             # 执行安装stage 1命令
             stdin, stdout, stderr = client.exec_command(
-                f'sh /root/inst_1_stage.sh {wallet_passwd}')
+                f'sh /root/inst_stage1.sh {wallet_passwd}')
 
             if stdout.readable:
                 output = str(stdout.read(), encoding='utf-8')
@@ -111,14 +111,14 @@ def ssh_stage2(ip, password, owner_address, wallet_passwd):
 
             # 上传脚本
             sftp = client.open_sftp()
-            sftp.put('inst_2_stage.sh', '/root/inst_2_stage.sh')
+            sftp.put('inst_stage2.sh', '/root/inst_stage2.sh')
 
             # 修改权限
-            client.exec_command('chmod +x /root/inst_2_stage.sh')
+            client.exec_command('chmod +x /root/inst_stage2.sh')
 
             # 执行安装stage 2命令
             stdin, stdout, stderr = client.exec_command(
-                f'sh /root/inst_2_stage.sh {wallet_passwd} {owner_address}')
+                f'sh /root/inst_stage2.sh {wallet_passwd} {owner_address}')
 
             if stdout.readable:
                 output = str(stdout.read(), encoding='utf-8')
