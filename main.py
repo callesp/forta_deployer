@@ -145,22 +145,20 @@ class Procedure(enum.Enum):
 @click.command()
 @click.option('--assets', default='assets.csv', help='Assets file.')
 def stage1(assets):
-    main(Procedure.Stage1)
+    main(Procedure.Stage1, assets)
 
 @click.command()
 @click.option('--assets', default='assets.csv', help='Assets file.')
 def stage2(assets):
-    main(Procedure.Stage2)
+    main(Procedure.Stage2, assets)
 
 cli.add_command(stage1)
 cli.add_command(stage2)
 
-def main(stage):
-    # assets_path = sys.argv[1]
-    assets_path = 'assets.csv'
+def main(stage, assets):
 
     # Make sure that we have assets.csv.
-    if not os.path.exists(assets_path):
+    if not os.path.exists(assets):
         print('Assets path does not exists.')
         return
 
@@ -170,7 +168,7 @@ def main(stage):
 
     nodes_list = []
 
-    with open(assets_path, 'r') as f:
+    with open(assets, 'r') as f:
         reader = csv.reader(f)
 
         for row in reader:
