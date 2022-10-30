@@ -1,12 +1,14 @@
 # -*- encoding: utf-8 -*-
 import enum
 import os
+import threading
 import click
 import csv
 import paramiko
 import traceback
 from threading import Thread
 
+thread_lock = threading.Lock()
 
 TIMEOUT = 30
 
@@ -211,6 +213,9 @@ def ssh_cmd(ip, password, cmd):
         stdin, stdout, stderr = client.exec_command(
             f'{cmd}')
 
+        thread_lock.acquire()
+
+        print('*'*50)
         if stdout.readable:
             output = str(stdout.read(), encoding='utf-8')
             print(f'stdout[{ip}]: {output}')
@@ -218,6 +223,9 @@ def ssh_cmd(ip, password, cmd):
         if stderr.readable:
             output = str(stderr.read(), encoding='utf-8')
             print(f'stderr[{ip}]: {output}')
+        print('*'*50)
+
+        thread_lock.release()
 
     except Exception as e:
         traceback.print_exc()
