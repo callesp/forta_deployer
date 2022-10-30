@@ -9,6 +9,7 @@ import traceback
 from threading import Thread
 
 thread_lock = threading.Lock()
+count = 0
 
 TIMEOUT = 30
 
@@ -216,6 +217,9 @@ def ssh_cmd(ip, password, cmd):
         thread_lock.acquire()
 
         print('*'*50)
+        global count
+        count += 1
+        print(f'Count: {count}')
         if stdout.readable:
             output = str(stdout.read(), encoding='utf-8')
             print(f'stdout[{ip}]: {output}')
