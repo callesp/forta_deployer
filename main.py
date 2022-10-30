@@ -7,6 +7,9 @@ import paramiko
 import traceback
 from threading import Thread
 
+
+TIMEOUT = 30
+
 output_dir = 'output'
 
 @click.group()
@@ -39,7 +42,7 @@ def ssh_stage1(ip, password, wallet_passwd):
             client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             # 密码方式远程连接
             client.connect(ip, 22, username='root',
-                           password=password, timeout=5)
+                           password=password, timeout=TIMEOUT)
             # 互信方式远程连接
             # key_file = paramiko.RSAKey.from_private_key_file("/root/.ssh/id_rsa")
             # ssh.connect(sys_ip, 22, username=username, pkey=key_file, timeout=20)
@@ -104,7 +107,7 @@ def ssh_stage2(ip, password, owner_address, wallet_passwd):
             client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             # 密码方式远程连接
             client.connect(ip, 22, username='root',
-                           password=password, timeout=5)
+                           password=password, timeout=TIMEOUT)
             # 互信方式远程连接
             # key_file = paramiko.RSAKey.from_private_key_file("/root/.ssh/id_rsa")
             # ssh.connect(sys_ip, 22, username=username, pkey=key_file, timeout=20)
@@ -137,9 +140,61 @@ def ssh_stage2(ip, password, owner_address, wallet_passwd):
         finally:
             client.close()
 
+@async_func
+def ssh_clean(ip, password):
+    # 创建ssh客户端
+    client = paramiko.SSHClient()
+
+    node_output_dir = f'{output_dir}/{ip}'
+
+    # Create node output directory.
+    if not os.path.exists(node_output_dir):
+        print(f'Error: output directory is not found.')
+        return
+
+    with open(f'{node_output_dir}/output.log', 'a+') as log, open(f'{node_output_dir}/error.log', 'a+') as errlog:
+        try:
+            # 第一次ssh远程时会提示输入yes或者no
+            client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            # 密码方式远程连接
+            client.connect(ip, 22, username='root',
+                           password=password, timeout=TIMEOUT)
+            # 互信方式远程连接
+            # key_file = paramiko.RSAKey.from_private_key_file("/root/.ssh/id_rsa")
+            # ssh.connect(sys_ip, 22, username=username, pkey=key_file, timeout=20)
+
+            # 上传脚本
+            sftp = client.open_sftp()
+            sftp.put('clean.sh', '/root/clean.sh')
+
+            # 修改权限
+            client.exec_command('chmod +x /root/clean.sh')
+
+            # 执行安装stage 2命令
+            stdin, stdout, stderr = client.exec_command(
+                f'sh /root/clean.sh')
+
+            if stdout.readable:
+                output = str(stdout.read(), encoding='utf-8')
+                print(f'stdout: {output}')
+                log.write(output)
+
+            if stderr.readable:
+                output = str(stderr.read(), encoding='utf-8')
+                print(f'stderr: {output}')
+                errlog.write(output)
+
+        except Exception as e:
+            errlog.write(traceback.format_exc())
+            traceback.print_exc()
+
+        finally:
+            client.close()
 class Procedure(enum.Enum):
     Stage1 = 1,
-    Stage2 = 2
+    Stage2 = 2,
+    Status = 3,
+    Clean = 4
 
 
 @click.command()
@@ -152,8 +207,20 @@ def stage1(assets):
 def stage2(assets):
     main(Procedure.Stage2, assets)
 
+@click.command()
+@click.option('--assets', default='assets.csv', help='Assets file.')
+def status(assets):
+    main(Procedure.Status, assets)
+
+@click.command()
+@click.option('--assets', default='assets.csv', help='Assets file.')
+def clean(assets):
+    main(Procedure.Clean, assets)
+
 cli.add_command(stage1)
 cli.add_command(stage2)
+cli.add_command(status)
+cli.add_command(clean)
 
 def main(stage, assets):
 
@@ -184,6 +251,8 @@ def main(stage, assets):
                 ssh_stage1(ip, passwd, wallet_passwd)
             elif stage == Procedure.Stage2:
                 ssh_stage2(ip, passwd, address, wallet_passwd)
+            elif stage == Procedure.Clean:
+                ssh_clean(ip, passwd)
             else:
                 pass
 
