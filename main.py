@@ -60,12 +60,12 @@ def ssh_stage1(ip, password, wallet_passwd):
 
             if stdout.readable:
                 output = str(stdout.read(), encoding='utf-8')
-                print(f'stdout: {output}')
+                print(f'stdout[{ip}]: {output}')
                 log.write(output)
 
             if stderr.readable:
                 output = str(stderr.read(), encoding='utf-8')
-                print(f'stderr: {output}')
+                print(f'stderr[{ip}]: {output}')
                 errlog.write(output)
 
             # Get account address.
@@ -190,10 +190,44 @@ def ssh_clean(ip, password):
 
         finally:
             client.close()
+
+
+@async_func
+def ssh_cmd(ip, password, cmd):
+    # 创建ssh客户端
+    client = paramiko.SSHClient()
+
+    try:
+        # 第一次ssh远程时会提示输入yes或者no
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        # 密码方式远程连接
+        client.connect(ip, 22, username='root',
+                        password=password, timeout=TIMEOUT)
+        # 互信方式远程连接
+        # key_file = paramiko.RSAKey.from_private_key_file("/root/.ssh/id_rsa")
+        # ssh.connect(sys_ip, 22, username=username, pkey=key_file, timeout=20)
+
+        # 执行安装cmd命令
+        stdin, stdout, stderr = client.exec_command(
+            f'{cmd}')
+
+        if stdout.readable:
+            output = str(stdout.read(), encoding='utf-8')
+            print(f'stdout[{ip}]: {output}')
+
+        if stderr.readable:
+            output = str(stderr.read(), encoding='utf-8')
+            print(f'stderr[{ip}]: {output}')
+
+    except Exception as e:
+        traceback.print_exc()
+
+    finally:
+        client.close()
 class Procedure(enum.Enum):
     Stage1 = 1,
     Stage2 = 2,
-    Status = 3,
+    Cmd = 3,
     Clean = 4
 
 
@@ -209,8 +243,9 @@ def stage2(assets):
 
 @click.command()
 @click.option('--assets', default='assets.csv', help='Assets file.')
-def status(assets):
-    main(Procedure.Status, assets)
+@click.option('--cmd', help='Custom command.')
+def run(assets, cmd):
+    main(Procedure.Cmd, assets, cmd)
 
 @click.command()
 @click.option('--assets', default='assets.csv', help='Assets file.')
@@ -219,10 +254,10 @@ def clean(assets):
 
 cli.add_command(stage1)
 cli.add_command(stage2)
-cli.add_command(status)
+cli.add_command(run)
 cli.add_command(clean)
 
-def main(stage, assets):
+def main(stage, assets, cmd = None):
 
     # Make sure that we have assets.csv.
     if not os.path.exists(assets):
@@ -243,7 +278,7 @@ def main(stage, assets):
             nodes_list.append(row)
 
     while len(nodes_list):
-        node_part = nodes_list[0:5]
+        node_part = nodes_list[0:10]
 
         for ip, passwd, address, wallet_passwd in node_part:
             # Do something here.
@@ -253,10 +288,12 @@ def main(stage, assets):
                 ssh_stage2(ip, passwd, address, wallet_passwd)
             elif stage == Procedure.Clean:
                 ssh_clean(ip, passwd)
+            elif stage == Procedure.Cmd:
+                ssh_cmd(ip, passwd, cmd)
             else:
                 pass
 
-        del nodes_list[0:5]
+        del nodes_list[0:10]
 
 
 if __name__ == '__main__':
