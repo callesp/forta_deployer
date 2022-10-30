@@ -91,14 +91,16 @@ function install_docker(){
 
     yum install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 
+    systemctl start docker
+
     until [ -e '/etc/docker' ]
     do
-        sleep 10
+        sleep 1
     done
 
     echo "$DAEMON_JSON" > /etc/docker/daemon.json
 
-    systemctl start docker
+    systemctl restart docker
 }
 
 
