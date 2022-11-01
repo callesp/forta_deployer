@@ -76,7 +76,7 @@ def ssh_stage1(ip, password, wallet_passwd):
                 f'su - forta -c "forta account address" 2>&1')
 
             if stdout.readable:
-                token = str(stdout.read(), encoding='utf-8')
+                token = str(stdout.read(), encoding='utf-8').strip()
 
                 if token:
                     token_dir = f'{node_output_dir}/{token}'
@@ -129,12 +129,12 @@ def ssh_stage2(ip, password, owner_address, wallet_passwd):
 
             if stdout.readable:
                 output = str(stdout.read(), encoding='utf-8')
-                print(f'stdout: {output}')
+                print(f'stdout[{ip}]: {output}')
                 log.write(output)
 
             if stderr.readable:
                 output = str(stderr.read(), encoding='utf-8')
-                print(f'stderr: {output}')
+                print(f'stderr[{ip}]: {output}')
                 errlog.write(output)
 
         except Exception as e:
@@ -181,12 +181,12 @@ def ssh_clean(ip, password):
 
             if stdout.readable:
                 output = str(stdout.read(), encoding='utf-8')
-                print(f'stdout: {output}')
+                print(f'stdout[{ip}]: {output}')
                 log.write(output)
 
             if stderr.readable:
                 output = str(stderr.read(), encoding='utf-8')
-                print(f'stderr: {output}')
+                print(f'stderr[{ip}]: {output}')
                 errlog.write(output)
 
         except Exception as e:
