@@ -87,6 +87,7 @@ def ssh_stage1(ip, password, wallet_passwd):
 
         except Exception as e:
             errlog.write(traceback.format_exc())
+            print(f'[{ip}]')
             traceback.print_exc()
 
         finally:
@@ -138,6 +139,7 @@ def ssh_stage2(ip, password, owner_address, wallet_passwd):
 
         except Exception as e:
             errlog.write(traceback.format_exc())
+            print(f'[{ip}]')
             traceback.print_exc()
 
         finally:
@@ -189,6 +191,7 @@ def ssh_clean(ip, password):
 
         except Exception as e:
             errlog.write(traceback.format_exc())
+            print(f'[{ip}]')
             traceback.print_exc()
 
         finally:
@@ -232,6 +235,7 @@ def ssh_cmd(ip, password, cmd):
         thread_lock.release()
 
     except Exception as e:
+        print(f'[{ip}]')
         traceback.print_exc()
 
     finally:
